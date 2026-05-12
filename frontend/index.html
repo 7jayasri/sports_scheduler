@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="style.css" rel="stylesheet">
+    <title>Sports Scheduler</title>
+    
+</head>
+<body>
+    <!-- Authentication Section -->
+    <div id="authSection">
+        <div class="auth-container">
+            <div class="card">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+                    <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+                </div>
+
+                <div id="alertContainer"></div>
+
+                <!-- Login Form -->
+                <div id="loginForm">
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                    </form>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signupForm" class="hidden">
+                    <form onsubmit="handleSignup(event)">
+                        <div class="form-group">
+                            <label class="form-label">Role</label>
+                            <div class="role-selector">
+                                <div class="role-option selected" onclick="selectRole('user')">
+                                    <strong>Player</strong>
+                                    <div style="color: #6c757d; font-size: 12px;">Create and join sessions</div>
+                                </div>
+                                <div class="role-option" onclick="selectRole('admin')">
+                                    <strong>Admin</strong>
+                                    <div style="color: #6c757d; font-size: 12px;">Manage sports & view reports</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" id="signupName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="signupEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="signupPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="hidden">
+        <!-- Navigation -->
+        <div class="nav-header">
+            <div class="nav-content">
+                <div class="logo">🏆 Sports Scheduler</div>
+                <div class="nav-buttons">
+                    <div class="user-info">
+                        <span>👤</span>
+                        <span id="userName"></span>
+                        <span id="userRole" class="admin-badge hidden">Admin</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="showView('sessions')">My Sessions</button>
+                    <button class="btn btn-secondary" onclick="showView('available')">Available Sessions</button>
+                    <button class="btn btn-secondary admin-only hidden" onclick="showView('sports')">Manage Sports</button>
+                    <button class="btn btn-secondary admin-only hidden" onclick="showView('reports')">Reports</button>
+                    <button class="btn btn-danger" onclick="logout()">🚪 Sign Out</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- My Sessions View -->
+            <div id="sessionsView" class="view">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+                    <h2 class="section-title">My Sport Sessions</h2>
+                    <button class="btn btn-primary" onclick="openCreateSessionModal()">
+                        ➕ Create Session
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Sessions I Created</h3>
+                    <div id="myCreatedSessions" class="sessions-list"></div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Sessions I Joined</h3>
+                    <div id="myJoinedSessions" class="sessions-list"></div>
+                </div>
+            </div>
+
+            <!-- Available Sessions View -->
+            <div id="availableView" class="view hidden">
+                <h2 class="section-title">Available Sessions</h2>
+                <div class="card">
+                    <div id="availableSessions" class="sessions-list"></div>
+                </div>
+            </div>
+
+            <!-- Sports Management View (Admin Only) -->
+            <div id="sportsView" class="view hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+                    <h2 class="section-title">Sports Management</h2>
+                    <button class="btn btn-primary" onclick="openCreateSportModal()">
+                        ➕ Create Sport
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div id="sportsGrid" class="sports-grid"></div>
+                </div>
+            </div>
+
+            <!-- Reports View (Admin Only) -->
+            <div id="reportsView" class="view hidden">
+                <h2 class="section-title">Reports & Analytics</h2>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Time Period Reports</h3>
+                    <div class="form-group">
+                        <label class="form-label">Select Time Period</label>
+                        <select class="form-control" id="reportPeriod" onchange="generateReport()" style="max-width: 300px;">
+                            <option value="7">Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 3 months</option>
+                            <option value="365">Last year</option>
+                        </select>
+                    </div>
+                    <div id="reportContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Sport Modal -->
+    <div id="createSportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Sport</h3>
+                <button class="close-btn" onclick="closeModal('createSportModal')">&times;</button>
+            </div>
+            <form onsubmit="handleCreateSport(event)">
+                <div class="form-group">
+                    <label class="form-label">Sport Name</label>
+                    <input type="text" class="form-control" id="sportName" required placeholder="e.g., Football, Basketball, Tennis">
+                </div>
+                <button type="submit" class="btn btn-primary">Create Sport</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Session Modal -->
+    <div id="createSessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Session</h3>
+                <button class="close-btn" onclick="closeModal('createSessionModal')">&times;</button>
+            </div>
+            <form onsubmit="handleCreateSession(event)">
+                <div class="form-group">
+                    <label class="form-label">Sport</label>
+                    <select class="form-control" id="sessionSport" required>
+                        <option value="">Select a sport</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Venue</label>
+                    <input type="text" class="form-control" id="sessionVenue" required placeholder="e.g., City Stadium, Sports Complex">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date & Time</label>
+                    <input type="datetime-local" class="form-control" id="sessionDateTime" required>
+                </div>
+                
+                <h4 style="margin: 20px 0 15px 0;">Team Configuration</h4>
+                
+                <div class="form-group">
+                    <label class="form-label">Team A Players (comma separated names)</label>
+                    <input type="text" class="form-control" id="teamAPlayers" placeholder="John, Sarah, Mike">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Team B Players (comma separated names)</label>
+                    <input type="text" class="form-control" id="teamBPlayers" placeholder="Alex, Emma, David">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Additional Players Needed</label>
+                    <input type="number" class="form-control" id="additionalPlayers" min="0" value="0" placeholder="Number of additional players needed">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Create Session</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel Session Modal -->
+    <div id="cancelSessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Cancel Session</h3>
+                <button class="close-btn" onclick="closeModal('cancelSessionModal')">&times;</button>
+            </div>
+            <form onsubmit="handleCancelSession(event)">
+                <div class="form-group">
+                    <label class="form-label">Reason for Cancellation</label>
+                    <textarea class="form-control" id="cancelReason" rows="4" required placeholder="Please provide a reason for cancelling this session..."></textarea>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-danger">Cancel Session</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('cancelSessionModal')">Keep Session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:7000';
+        let currentUser = null;
+        let selectedRole = 'user';
+        let sports = [];
+        let sessions = [];
+        let sessionToCancel = null;
+
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showDashboard();
+                loadAllData();
+            }
+
+            // Set minimum datetime to current time
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const datetimeInput = document.getElementById('sessionDateTime');
+            if (datetimeInput) {
+                datetimeInput.min = now.toISOString().slice(0, 16);
+            }
+        });
+
+        // Authentication Functions
+        function switchAuthTab(tab) {
+            const tabs = document.querySelectorAll('.auth-tab');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'login') {
+                tabs[0].classList.add('active');
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+            } else {
+                tabs[1].classList.add('active');
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+            }
+            
+            // Clear alerts
+            document.getElementById('alertContainer').innerHTML = '';
+        }
+
+        function selectRole(role) {
+            selectedRole = role;
+            const options = document.querySelectorAll('.role-option');
+            options.forEach(opt => opt.classList.remove('selected'));
+            event.target.closest('.role-option').classList.add('selected');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.user;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    showAlert('Login successful!', 'success');
+                    setTimeout(() => {
+                        showDashboard();
+                        loadAllData();
+                    }, 1000);
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('Login failed. Please check your connection.', 'error');
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role: selectedRole })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Account created successfully! Please login.', 'success');
+                    switchAuthTab('login');
+                    document.getElementById('loginEmail').value = email;
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('Signup failed. Please try again.', 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            currentUser = null;
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            
+            // Reset forms
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('signupName').value = '';
+            document.getElementById('signupEmail').value = '';
+            document.getElementById('signupPassword').value = '';
+            
+            showAlert('Signed out successfully!', 'success');
+        }
+
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('userName').textContent = currentUser.name;
+            
+            // Show/hide admin elements
+            const adminElements = document.querySelectorAll('.admin-only');
+            if (currentUser.role === 'admin') {
+                document.getElementById('userRole').classList.remove('hidden');
+                adminElements.forEach(el => el.classList.remove('hidden'));
+            } else {
+                document.getElementById('userRole').classList.add('hidden');
+                adminElements.forEach(el => el.classList.add('hidden'));
+            }
+            
+            // Show default view (My Sessions)
+            showView('sessions');
+        }
+
+        // Data Loading Functions
+        async function loadAllData() {
+            await loadSports();
+            await loadSessions();
+        }
+
+        async function loadSports() {
+            try {
+                const response = await fetch(`${API_BASE}/sports`);
+                if (response.ok) {
+                    sports = await response.json();
+                    updateSportsDisplay();
+                    updateSportOptions();
+                }
+            } catch (error) {
+                console.error('Error loading sports:', error);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch(`${API_BASE}/sessions`);
+                if (response.ok) {
+                    sessions = await response.json();
+                    updateSessionsDisplay();
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        // Display Update Functions
+        function updateSportsDisplay() {
+            const container = document.getElementById('sportsGrid');
+            if (sports.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">No sports created yet. Create your first sport!</p>';
+                return;
+            }
+
+            container.innerHTML = sports.map(sport => `
+                <div class="sport-item">
+                    <div>
+                        <div style="font-weight: 600; font-size: 16px;">${sport.name}</div>
+                        <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+                            ${sessions.filter(s => s.sport === sport.name).length} sessions
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteSport('${sport._id}')" title="Delete Sport">
+                        🗑️
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function updateSessionsDisplay() {
+            updateMyCreatedSessions();
+            updateMyJoinedSessions();
+            updateAvailableSessions();
+        }
+
+        function updateMyCreatedSessions() {
+            const container = document.getElementById('myCreatedSessions');
+            const myCreatedSessions = sessions.filter(session => session.createdBy._id === currentUser._id);
+
+            container.innerHTML = myCreatedSessions.map(session => {
+                const isPast = new Date(session.dateTime) < new Date();
+                const isCancelled = session.cancelled;
+                const statusClass = isCancelled ? 'cancelled' : isPast ? 'past' : '';
+                const statusBadge = isCancelled ? 'Cancelled' : isPast ? 'Completed' : 'Upcoming';
+                const statusBadgeClass = isCancelled ? 'status-cancelled' : isPast ? 'status-past' : 'status-upcoming';
+
+                return `
+                    <div class="session-item ${statusClass}">
+                        <div class="session-header">
+                            <div>
+                                <div class="session-title">${session.sport}</div>
+                                <span class="status-badge ${statusBadgeClass}">${statusBadge}</span>
+                            </div>
+                            <div class="session-actions">
+                                ${!isPast && !isCancelled ? `<button class="btn btn-danger" onclick="openCancelSessionModal('${session._id}')">❌ Cancel</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="session-details">
+                            <div class="session-detail">
+                                <span>📍</span>
+                                <span>${session.venue}</span>
+                            </div>
+                            <div class="session-detail">
+                                <span>🕒</span>
+                                <span>${formatDateTime(session.dateTime)}</span>
+                            </div>
+                        </div>
+                        ${session.teamA || session.teamB ? `
+                            <div class="session-teams">
+                                ${session.teamA ? `
+                                    <div class="team-section">
+                                        <div class="team-title">Team A:</div>
+                                        <div class="players-list">
+                                            ${session.teamA.map(player => `<span class="player-tag">${player}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${session.teamB ? `
+                                    <div class="team-section">
+                                        <div class="team-title">Team B:</div>
+                                        <div class="players-list">
+                                            ${session.teamB.map(player => `<span class="player-tag">${player}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${session.additionalPlayers > 0 ? `
+                                    <div class="player-count">
+                                        ${session.additionalPlayers} additional player(s) needed
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        ${session.cancellationReason ? `
+                            <div class="cancellation-reason">
+                                <strong>Cancellation reason:</strong> ${session.cancellationReason}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateMyJoinedSessions() {
+            const container = document.getElementById('myJoinedSessions');
+            // For now, showing placeholder since join functionality needs backend implementation
+            container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">Sessions you join will appear here.</p>';
+        }
+
+        function updateAvailableSessions() {
+            const container = document.getElementById('availableSessions');
+            const now = new Date();
+            const availableSessions = sessions.filter(session => 
+                new Date(session.dateTime) > now && 
+                session.createdBy._id !== currentUser._id && 
+                !session.cancelled
+            );
+
+            if (availableSessions.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">No available sessions to join at the moment.</p>';
+                return;
+            }
+
+            container.innerHTML = availableSessions.map(session => `
+                <div class="session-item">
+                    <div class="session-header">
+                        <div>
+                            <div class="session-title">${session.sport}</div>
+                            <div style="font-size: 14px; color: #6c757d;">Created by ${session.createdBy.name}</div>
+                        </div>
+                        <div class="session-actions">
+                            <button class="btn btn-success" onclick="joinSession('${session._id}')">⚡ Join Session</button>
+                        </div>
+                    </div>
+                    <div class="session-details">
+                        <div class="session-detail">
+                            <span>📍</span>
+                            <span>${session.venue}</span>
+                        </div>
+                        <div class="session-detail">
+                            <span>🕒</span>
+                            <span>${formatDateTime(session.dateTime)}</span>
+                        </div>
+                    </div>
+                    ${session.teamA || session.teamB ? `
+                        <div class="session-teams">
+                            ${session.teamA ? `
+                                <div class="team-section">
+                                    <div class="team-title">Team A:</div>
+                                    <div class="players-list">
+                                        ${session.teamA.map(player => `<span class="player-tag">${player}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${session.teamB ? `
+                                <div class="team-section">
+                                    <div class="team-title">Team B:</div>
+                                    <div class="players-list">
+                                        ${session.teamB.map(player => `<span class="player-tag">${player}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${session.additionalPlayers > 0 ? `
+                                <div class="player-count">
+                                    <strong>${session.additionalPlayers} more player(s) needed!</strong>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateSportOptions() {
+            const select = document.getElementById('sessionSport');
+            if (select) {
+                select.innerHTML = '<option value="">Select a sport</option>' + 
+                    sports.map(sport => `<option value="${sport.name}">${sport.name}</option>`).join('');
+            }
+        }
+
+        // View Management
+        function showView(viewName) {
+            // Hide all views
+            const views = document.querySelectorAll('.view');
+            views.forEach(view => view.classList.add('hidden'));
+            
+            // Show selected view
+            const targetView = document.getElementById(viewName + 'View');
+            if (targetView) {
+                targetView.classList.remove('hidden');
+            }
+
+            // Update navigation buttons
+            const navButtons = document.querySelectorAll('.nav-buttons .btn-secondary, .nav-buttons .btn-primary');
+            navButtons.forEach(btn => {
+                if (!btn.textContent.includes('Sign Out')) {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                }
+            });
+
+            // Highlight active button
+            const viewMap = {
+                'sessions': 'My Sessions',
+                'available': 'Available Sessions', 
+                'sports': 'Manage Sports',
+                'reports': 'Reports'
+            };
+            
+            const activeButton = Array.from(navButtons).find(btn => 
+                btn.textContent.trim() === viewMap[viewName]
+            );
+            if (activeButton) {
+                activeButton.classList.remove('btn-secondary');
+                activeButton.classList.add('btn-primary');
+            }
+
+            // Load specific view data
+            if (viewName === 'reports' && currentUser.role === 'admin') {
+                generateReport();
+            }
+        }
+
+        // Modal Functions
+        function openCreateSportModal() {
+            document.getElementById('createSportModal').classList.add('active');
+        }
+
+        function openCreateSessionModal() {
+            document.getElementById('createSessionModal').classList.add('active');
+        }
+
+        function openCancelSessionModal(sessionId) {
+            sessionToCancel = sessionId;
+            document.getElementById('cancelSessionModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            
+            // Reset forms
+            if (modalId === 'createSportModal') {
+                document.getElementById('sportName').value = '';
+            } else if (modalId === 'createSessionModal') {
+                document.getElementById('sessionSport').value = '';
+                document.getElementById('sessionVenue').value = '';
+                document.getElementById('sessionDateTime').value = '';
+                document.getElementById('teamAPlayers').value = '';
+                document.getElementById('teamBPlayers').value = '';
+                document.getElementById('additionalPlayers').value = '0';
+            } else if (modalId === 'cancelSessionModal') {
+                document.getElementById('cancelReason').value = '';
+                sessionToCancel = null;
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        });
+
+        // Sport Management Functions
+        async function handleCreateSport(event) {
+            event.preventDefault();
+            const name = document.getElementById('sportName').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/sports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, userId: currentUser._id })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Sport created successfully!', 'success');
+                    closeModal('createSportModal');
+                    await loadSports();
+                } else {
+                    showAlert(data.message || 'Failed to create sport', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to create sport. Please check your connection.', 'error');
+            }
+        }
+
+        async function deleteSport(sportId) {
+            if (!confirm('Are you sure you want to delete this sport? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/sports/${sportId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUser._id })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Sport deleted successfully!', 'success');
+                    await loadSports();
+                } else {
+                    showAlert(data.message || 'Failed to delete sport', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to delete sport. Please check your connection.', 'error');
+            }
+        }
+
+        // Session Management Functions
+        async function handleCreateSession(event) {
+            event.preventDefault();
+            
+            const sport = document.getElementById('sessionSport').value;
+            const venue = document.getElementById('sessionVenue').value;
+            const dateTime = document.getElementById('sessionDateTime').value;
+            const teamAInput = document.getElementById('teamAPlayers').value;
+            const teamBInput = document.getElementById('teamBPlayers').value;
+            const additionalPlayers = parseInt(document.getElementById('additionalPlayers').value) || 0;
+
+            // Parse team players
+            const teamA = teamAInput ? teamAInput.split(',').map(name => name.trim()).filter(name => name) : [];
+            const teamB = teamBInput ? teamBInput.split(',').map(name => name.trim()).filter(name => name) : [];
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sport,
+                        venue,
+                        dateTime: new Date(dateTime).toISOString(),
+                        createdBy: currentUser._id,
+                        teamA,
+                        teamB,
+                        additionalPlayers
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Session created successfully!', 'success');
+                    closeModal('createSessionModal');
+                    await loadSessions();
+                } else {
+                    showAlert(data.message || 'Failed to create session', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to create session. Please check your connection.', 'error');
+            }
+        }
+
+        async function handleCancelSession(event) {
+            event.preventDefault();
+            
+            const reason = document.getElementById('cancelReason').value;
+            
+            // Since the backend doesn't have a cancel endpoint, we'll simulate it
+            // In a real implementation, you'd call an API endpoint like:
+            // PUT /sessions/{id}/cancel with { reason, userId }
+            
+            try {
+                // For now, we'll update the session locally and show success
+                // In real implementation, this would be an API call
+                showAlert(`Session cancellation requested. Reason: "${reason}". This feature needs backend implementation.`, 'error');
+                closeModal('cancelSessionModal');
+                
+                // You would implement this API call:
+                // const response = await fetch(`${API_BASE}/sessions/${sessionToCancel}/cancel`, {
+                //     method: 'PUT',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ reason, userId: currentUser._id })
+                // });
+                
+            } catch (error) {
+                showAlert('Failed to cancel session. Please try again.', 'error');
+            }
+        }
+
+        async function joinSession(sessionId) {
+            // Check for time conflicts
+            const session = sessions.find(s => s._id === sessionId);
+            if (session) {
+                const sessionTime = new Date(session.dateTime);
+                const conflictingSessions = sessions.filter(s => 
+                    s.createdBy._id === currentUser._id && 
+                    Math.abs(new Date(s.dateTime) - sessionTime) < 2 * 60 * 60 * 1000 // 2 hour window
+                );
+                
+                if (conflictingSessions.length > 0) {
+                    const confirmJoin = confirm('Warning: You have another session around the same time. Do you still want to join this session?');
+                    if (!confirmJoin) {
+                        return;
+                    }
+                }
+            }
+            
+            try {
+                
+                showAlert('Session join requested! This feature needs backend implementation.', 'error');
+               
+                
+            } catch (error) {
+                showAlert('Failed to join session. Please try again.', 'error');
+            }
+        }
+
+        // Reports Functions
+        function generateReport() {
+            const period = parseInt(document.getElementById('reportPeriod').value);
+            const fromDate = new Date();
+            fromDate.setDate(fromDate.getDate() - period);
+            
+            const filteredSessions = sessions.filter(session => 
+                new Date(session.dateTime) >= fromDate
+            );
+            
+            // Calculate statistics
+            const totalSessions = filteredSessions.length;
+            const sportCounts = {};
+            
+            filteredSessions.forEach(session => {
+                sportCounts[session.sport] = (sportCounts[session.sport] || 0) + 1;
+            });
+            
+            const popularSports = Object.entries(sportCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+            
+            const reportContent = document.getElementById('reportContent');
+            reportContent.innerHTML = `
+                <div style="margin-top: 20px;">
+                    <h4>Sessions in Last ${period} Days</h4>
+                    <div style="font-size: 24px; font-weight: bold; color: #667eea; margin: 10px 0;">
+                        ${totalSessions}
+                    </div>
+                    
+                    <h4 style="margin-top: 30px;">Sport Popularity</h4>
+                    ${popularSports.length > 0 ? `
+                        <div style="margin-top: 15px;">
+                            ${popularSports.map(([sport, count], index) => `
+                                <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; margin-bottom: 8px; border-radius: 6px;">
+                                    <span>${index + 1}. ${sport}</span>
+                                    <span style="font-weight: bold; color: #667eea;">${count} sessions</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p style="color: #6c757d; margin-top: 10px;">No sessions in this period.</p>'}
+                </div>
+            `;
+        }
+
+        // Utility Functions
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${message}
+                </div>
+            `;
+            
+            // Auto-hide alert after 4 seconds
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 4000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // ESC to close modals
+            if (event.key === 'Escape') {
+                const activeModal = document.querySelector('.modal.active');
+                if (activeModal) {
+                    activeModal.classList.remove('active');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
