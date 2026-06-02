@@ -33,4 +33,6 @@ node server.js
 Frontend:
 
 Open index.html using Live Server.
+Live Demo:https://sports-scheduler-frontend.netlify.app/
 ```
+
